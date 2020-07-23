@@ -4,33 +4,36 @@ class JMAComponentAccordion extends JMAComponent
     public function markup()
     {
         $content = $this->content;
-        $accordion_array = $content['tabs_content'];
+        $accordion_array = $content['accordion_tabs_content'];
         if (!(is_array($accordion_array) && count($accordion_array))) {//returns if $accordion_array not useful
             return;
         }
         $return = '<div ';
-        $return .= 'id="' . $content['comp_id'] . '" ';
-        $return .= 'class="tb-accordion panel-group jma-component jma-' . strtolower($content['acf_fc_layout']) . ' ' . $content['custom_class'] . '"';
+        $return .= 'id="' . $content['accordion_comp_id'] . '" ';
+        $return .= 'class="accordion panel-group jma-component jma-' . strtolower($content['acf_fc_layout']) . ' ' . $content['custom_class'] . '"';
         $return .= '>';
         foreach ($accordion_array as $i => $accordion_pair) {
             if (!$accordion_pair['hide']) {
-                $trigger = $in = '';
+                $in = '';
+                $trigger = 'collapsed';
+                $aria_expanded = 'false';
                 if ($content['open'] && !$i) {
-                    $trigger = ' active-trigger';
-                    $in = ' in';
+                    $trigger = '';
+                    $aria_expanded = 'true';
+                    $in = ' show';
                 }
 
-                $return .= '<div class="tb-toggle panel panel-default">';// panel-default
-            $return .= '<div class="panel-heading">';//panel-heading
-            $return .= '<a class="accordion-cat panel-title' . $trigger . '" data-toggle="collapse" data-parent="#accordion" href="#collapse' . $content['comp_id'] . $i . '">';
-                $return .= '<i class="fas fa-angle-right icon-show switch-me"></i><i class="fas fa-angle-down icon-hide switch-me"></i>' . $accordion_pair['tab'];
-                $return .= '</a>';
-                $return .= '</div><!--panel-heading-->';
-                $return .= '<div id="collapse' . $content['comp_id'] . $i . '" class="panel-collapse collapse' . $in . '"><div>';
-                foreach ($accordion_pair['contents'] as $element) {
+                $return .= '<div class="card panel panel-default">';// panel-default
+                $return .= '<div id="' . $content['accordion_comp_id'] . $i . '" class="card-header">';//panel-header
+                $return .= '<button class="panel-title btn btn-link ' . $trigger . '" data-toggle="collapse" data-target="#collapse' . $content['accordion_comp_id'] . $i . '" aria-expanded="' . $aria_expanded . '" aria-controls="collapse' . $content['accordion_comp_id'] . $i . '"">';
+                $return .= '<i class="fas fa-angle-right"></i>' . $accordion_pair['accordion_tab'];
+                $return .= '</button>';
+                $return .= '</div><!--panel-header-->';
+                $return .= '<div id="collapse' . $content['accordion_comp_id'] . $i . '" class="collapse' . $in . '" data-parent="#' . $content['accordion_comp_id'] . '" aria-labelledby="' . $content['accordion_comp_id'] . $i . '""><div class="card-body">';
+                foreach ($accordion_pair['accordion_contents'] as $element) {
                     switch ($element['acf_fc_layout']) {
                     case 'text_content':
-                        $return .= apply_filters('the_content', $element['content']);
+                        $return .= apply_filters('the_content', $element['accordion_content']);
                         break;
                     case 'song':
                         $song_ob = $element['song'];
@@ -49,59 +52,48 @@ class JMAComponentAccordion extends JMAComponent
         return $return;
     }
 
-    public function css()
+    public static function css_filter($mods = array())
     {
-        $content = $this->content;
-        $group_class = '#' . $this->id . '.jma-component.jma-accordion';
-        if ($content['inactive_bg']) {
-            $return = $group_class . '.panel-group .panel-default>.panel-heading a {
-            background-color: ' . $content['inactive_bg'] . ';
-            border-color: #cccccc;
-        }';
-        }
-        if ($content['inactive_text']) {
-            $return .= $group_class . '.panel-group .panel-default>.panel-heading a {
-            color: ' . $content['inactive_text'] . ';
-        }';
-        }
-        if ($content['active_bg']) {
-            $return .=  $group_class . '.panel-group .panel-default>.panel-heading a.active-trigger {
-            background-color: ' . $content['active_bg'] . ';
-        }';
-        }
-        if ($content['active_text']) {
-            $return .=  $group_class . '.panel-group .panel-default>.panel-heading a.active-trigger {
-            color: ' . $content['active_text'] . ';
-        }';
-        }
+        $group_class = '.jma-component.accordion';
 
-        return $return;
-    }
+        $dynamic_styles[] =  array(
+            'selector' => $group_class . ' .card-header button',
+            'background-color'=> $mods['footer_font_color'],
+            'border-color'=> $mods['footer_bg_color'],
+        );
+        $dynamic_styles[] =  array(
+            'selector' => $group_class . ' .card-header button',
+            'color'=> $mods['footer_bg_color'],
+        );
+        $dynamic_styles[] =  array(
+            'selector' => $group_class . ' .card-header:hover',
+            'opacity'=> '0.85'
+        );
 
-    public static function css_filter()
-    {
-        $group_class = '.jma-component.jma-accordion';
-        $jma_spec_options = jma_get_theme_values();//echo '<pre>';print_r($jma_spec_options);echo '</pre>';
-
-        $dynamic_styles['compacc'] =  array($group_class . '.panel-group .panel-default>.panel-heading a',
-            array('background-color', $jma_spec_options['footer_background_color']),
-            array('border-color', $jma_spec_options['footer_font_color']),
-            array('color', $jma_spec_options['footer_font_color'])
+        $dynamic_styles[] =  array(
+            'selector' => $group_class . ' .card-header button.collapsed',
+            'background-color'=> $mods['footer_bg_color'],
+            'border-color'=> $mods['footer_font_color'],
         );
-        $dynamic_styles['compacc05'] =  array($group_class . '.panel-group .panel-default>.panel-heading a:hover',
-            array('opacity', '0.9')
+        $dynamic_styles[] =  array(
+            'selector' => $group_class . ' .card-header button.collapsed',
+            'color'=> $mods['footer_font_color'],
         );
-        $dynamic_styles['compacc07'] =  array($group_class . '.panel-group .panel-default>.panel-heading a.active-trigger:hover',
-            array('opacity', '1')
+        /*$dynamic_styles[] =  array(
+            'selector' => $group_class . '.panel-group .panel-default>.panel-heading button.active-trigger:hover',
+            'opacity'=> '1'
         );
-        $dynamic_styles['compacc10'] =  array($group_class . '.panel-group .tb-toggle.panel-default>.panel-heading .panel-title.active-trigger',
-            array('background-color', $jma_spec_options['footer_font_color']),
+        $dynamic_styles[] =  array(
+            'selector' => $group_class . '.panel-group .tb-toggle.panel-default>.panel-heading .panel-title.active-trigger',
+            'background-color'=> $mods['footer_font_color'],
         );
-        $dynamic_styles['compacc15'] =  array($group_class . '.panel-group .panel a.active-trigger',
-            array('color', $jma_spec_options['footer_background_color']),
-        );
-        $dynamic_styles['compacc20'] =  array('.jma-component.jma-accordion .panel-collapse > div',
-            array('padding', '20px'),
+        $dynamic_styles[] =  array(
+            'selector' => $group_class . '.panel-group .panel button.active-trigger',
+            'color'=> $mods['footer_bg_color'],
+        );*/
+        $dynamic_styles[] =  array(
+            'selector' => '.jma-component.accordion .panel-collapse > div',
+            'padding'=> '20px',
         );
         return $dynamic_styles;
     }
